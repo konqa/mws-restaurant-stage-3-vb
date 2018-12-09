@@ -208,6 +208,121 @@ class DBHelper {
     return `/img/${restaurant.id}.jpg`;
   }
 
+
+  static getRestaurantReviews(restaurant_id) {
+    return DBHelper.getRestaurantReviewsIdb(restaurant_id)
+      .then(reviews => {
+        return DBHelper.getRestaurantReviewsFromServer(restaurant_id)
+          .then(res => {
+            try {
+              [...reviews];
+            } catch (error) {
+              return [...res];
+            }
+            const negative = {};
+
+            reviews.forEach(review => {
+              negative[review.id] = review;
+              negative2[review.unique] = review;
+            });
+
+            const negative2 = {};
+
+            const knockOut = res.filter(review => {
+              return !negative[review.id];
+            });
+
+            const knockOut2 = knockOut.filter(review => {
+              return !negative2[review.unique];
+            });
+            return [...knockOut2, ...reviews];
+          })
+          .catch(err => {
+            return reviews;
+          });
+      });
+  }
+
+  static getRestaurantReviewsIdb(restaurant_id) {
+    return DBHelper.openReviewsDB().then(db => {
+      if (!db) return;
+      return db
+        .transaction('reviews')
+        .objectStore('reviews')
+        .getAll();
+    })
+      .then(reviews => {
+        if (!reviews || reviews.length < 1) return;
+        if (restaurant_id) {
+
+          return reviews.filter(element => {
+            return element.restaurant_id === restaurant_id;
+          });
+        }
+        return reviews;
+      });
+  }
+
+  static getRestaurantReviewsFromServer(restaurant_id) {
+    return fetch(`http://localhost:1337/reviews/?restaurant_id=2`)
+      .then(res => res.json())
+      .then(res => {
+        res.reduce((acc, review) => {
+          return acc.then(() => {
+            return DBHelper.storeReview(review);
+          });
+        }, Promise.resolve());
+
+        return res;
+      });
+  }
+
+  /**
+   * Update reviews
+   */
+
+  static updateReviewsServer(review) {
+    return fetch(`http://localhost:1337/reviews/${review.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff'
+      },
+      body: JSON.stringify({
+        name : review.name,
+        rating: review.rating,
+        comments: review.comments
+      })
+    });
+  }
+
+  static updateServerReviews() {
+    return DBHelper.getRestaurantReviewsIdb()
+      .then(reviews => {
+        if (!reviews) return;
+        const reviewsNotUploaded = reviews.filter(review => {
+          return typeof review.id === 'undefined';
+        });
+        return reviewsNotUploaded.reduce((acc, review) => {
+          return acc.then(() => {
+            return DBHelper.sendReviewToServer({
+              restaurant_id: review.restaurant_id,
+              name: review.name,
+              rating: review.rating,
+              comments: review.comments
+            })
+              .then(res => {
+                const changedReview = JSON.parse(JSON.stringify(review));
+                changedReview.id = res.id;
+                return DBHelper.updateReviewsIdb(changedReview);
+              });
+          });
+        }, Promise.resolve());
+      });
+  }
+
+
+
   /**
    * Map marker for a restaurant.
    */
@@ -235,3 +350,8 @@ class DBHelper {
     return marker;
   } */
 }
+
+
+
+
+
