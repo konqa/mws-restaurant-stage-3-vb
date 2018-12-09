@@ -34,8 +34,8 @@ initMap = () => {
       DBHelper.mapMarkerForRestaurant(self.restaurant, self.newMap);
     }
   });
-}  
- 
+}
+
 /* window.initMap = () => {
   fetchRestaurantFromURL((error, restaurant) => {
     if (error) { // Got an error!
@@ -80,9 +80,15 @@ fetchRestaurantFromURL = (callback) => {
 /**
  * Create restaurant HTML and add it to the webpage
  */
-fillRestaurantHTML = (restaurant = self.restaurant) => {
+const fillRestaurantHTML = (restaurant = self.restaurant) => {
   const name = document.getElementById('restaurant-name');
   name.innerHTML = restaurant.name;
+
+  if (restaurant.is_favorite !== 'false') {
+    document.querySelector('.restaurant-favourite').classList.add('favourite');
+  } else {
+    document.querySelector('.restaurant-favourite').classList.remove('favourite');
+  }
 
   const address = document.getElementById('restaurant-address');
   address.innerHTML = restaurant.address;
@@ -99,7 +105,10 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
     fillRestaurantHoursHTML();
   }
   // fill reviews
-  fillReviewsHTML();
+  return DBHelper.getRestaurantReviews(restaurant.id)
+    .then((reviews) => {
+      return fillReviewsHTML(reviews);
+    });
 }
 
 /**
@@ -121,6 +130,8 @@ fillRestaurantHoursHTML = (operatingHours = self.restaurant.operating_hours) => 
     hours.appendChild(row);
   }
 }
+
+
 
 /**
  * Create all reviews HTML and add them to the webpage.
