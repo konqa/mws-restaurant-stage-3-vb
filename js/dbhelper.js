@@ -14,15 +14,16 @@ class DBHelper {
   /**
    * IndexDB API setup
    */
+
   static openMWSdb() {
     if (!navigator.serviceWorker) {
       return Promise.resolve();
     }
-    return idb.open('MWSdb', 1, function(upgradeDb) {
+    return idb.open('restaurants_db', 1, function(upgradeDb) {
       const restaurantStore = upgradeDb.createObjectStore('restaurants', {
-        keyPath: 'name'
-      })
-    })
+        keyPath: 'id'
+      });
+    });
   }
 
   /**
@@ -36,7 +37,7 @@ class DBHelper {
       return restaurantsStore.getAll().then((restaurants) => {
         return restaurants;
       });
-    })
+    });
   }
 
   /**
@@ -49,9 +50,9 @@ class DBHelper {
       const restaurantsStore = tx.objectStore('restaurants');
       const restaurantKeys = Object.keys(restaurants);
       restaurantKeys.forEach((restaurantKey) => {
-        restaurantsStore.put(restaurants[restaurantKey])
-      })
-    })
+        restaurantsStore.put(restaurants[restaurantKey]);
+      });
+    });
   }
 
 
@@ -86,7 +87,7 @@ class DBHelper {
           callback(null, restaurant);
         } else {
           // Restaurant does not exist in the database
-          callback("Restaurant does not exist", null);
+          callback('Restaurant does not exist', null);
         }
       }
     });
@@ -138,11 +139,11 @@ class DBHelper {
         callback(error, null);
       } else {
         let results = restaurants;
-        if (cuisine != "all") {
+        if (cuisine != 'all') {
           // filter by cuisine
           results = results.filter(r => r.cuisine_type == cuisine);
         }
-        if (neighborhood != "all") {
+        if (neighborhood != 'all') {
           // filter by neighborhood
           results = results.filter(r => r.neighborhood == neighborhood);
         }
